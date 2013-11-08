@@ -6,8 +6,8 @@ Description: Users activity and accounts cleaner for MediaWiki
  Tested with MediaWiki 1.16 to 1.19 but acts respectful with any version.
  Idea taken from
  http://stackoverflow.com/questions/4505210/mediawiki-rollback-bot-mass-undo-troll-actions
-Version: 2013.10.15
-Maintainer: Narcis Garcia <packages@actiu.net>
+Version: 2013.11.07
+Maintainer: Narcis Garcia <packages@actiu.net>, Ed Hunsinger <edrabbit@edrabbit.com>
 Depends: coreutils, grep, mysql-client
 Recommends: bsd-mailx
 Section: web
@@ -27,7 +27,8 @@ License: GNU GPL
  .
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-Changelog: 2013.10.15 Avoid errors with any MW version
+Changelog: 2013.11.07 Add DBHost and Backup path arguments (edrabbit@edrabbit.com)
+ 2013.10.15 Avoid errors with any MW version
   Detailed operations to see all the progress.
   Tables prefix support
  2013.10.13 First version for MediaWiki 1.19.2
