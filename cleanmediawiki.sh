@@ -256,6 +256,8 @@ CleanMediaWiki()
 		echo '	Making temporary backup, to restore in case of SQL error...'
 		touch "${BackupPath}/cleanmediawiki.${DB_DbName}.sql"
 		chmod u=rw,go= "${BackupPath}/cleanmediawiki.${DB_DbName}.sql"
+		touch "${BackupPath}/cleanmediawiki.${DB_DbName}.images.txt"
+		chmod u=rw,go= "${BackupPath}/cleanmediawiki.${DB_DbName}.images.txt"
 		echo "DROP DATABASE IF EXISTS \"${DB_DbName}\";" >> "${BackupPath}/cleanmediawiki.${DB_DbName}.sql"
 		echo "CREATE DATABASE \"${DB_DbName}\";" >> "${BackupPath}/cleanmediawiki.${DB_DbName}.sql"
 		echo "USE \"${DB_DbName}\";" >> "${BackupPath}/cleanmediawiki.${DB_DbName}.sql"
@@ -466,6 +468,14 @@ CleanMediaWiki()
 				mysql --batch --skip-column-names "--host=${DB_Host}" "--user=${DB_UserName}" "--password=${DB_Password}" -e "DELETE FROM ${DB_DbName}.${CurrentTable2} WHERE page_id NOT IN (SELECT rev_page FROM ${DB_DbName}.${CurrentTable1});"
 				Result=$? ; if [ $ResultN -eq 0 ] ; then ResultN=$Result ; fi
 			fi
+			CurrentTable2="${TablesPrefix}image"
+			if [ "$(echo "$TablesList" | grep -e "^${CurrentTable2}$")" != "" ] ; then
+				echo "	uploaded images..."
+				CurrentImages="$(mysql --batch --skip-column-names "--host=${DB_Host}" "--user=${DB_UserName}" "--password=${DB_Password}" -e "SELECT img_name FROM ${DB_DbName}.${CurrentTable2} WHERE (img_user >= $FromUser AND img_user <= $ToUser);")"
+				echo -e "${CurrentImages}" >> "${BackupPath}/cleanmediawiki.${DB_DbName}.images.txt"
+				mysql --batch --skip-column-names "--host=${DB_Host}" "--user=${DB_UserName}" "--password=${DB_Password}" -e "DELETE FROM ${DB_DbName}.${CurrentTable2} WHERE (img_user >= $FromUser AND img_user <= $ToUser);"
+				Result=$? ; if [ $ResultN -eq 0 ] ; then ResultN=$Result ; fi
+			fi
 		else
 			echo "(8/9) Skipping 6 tables related to $CurrentTable1 from clean process (${CurrentTable1} not found)."
 		fi
@@ -497,7 +507,8 @@ CleanMediaWiki()
 	if [ $ResultN -eq 0 ] ; then
 		echo "Deleting temporary backup..."
 		rm -f "${BackupPath}/cleanmediawiki.${DB_DbName}.sql"
-		echo "All cleaning process completed."
+		echo "Please see ${BackupPath}/cleanmediawiki.${DB_DbName}.images.txt for images you have to delete manually from uploaded image directory (see variable wgUploadDirectory in LocalSettings.php)."
+		echo "All database cleaning process completed."
 	else
 		echo "Process stopped due to some problem."
 		if [ -f "${BackupPath}/cleanmediawiki.${DB_DbName}.sql" ] ; then
@@ -530,7 +541,7 @@ Help ()
 	ReturnScriptHeader "$ScriptFile" "description" | tr '[:lower:]' '[:upper:]'
 	echo ""
 	echo 'Syntax:'
-	echo "	$(basename "$0") DbName FromUser ToUser [DbUser [DbPassword [NotifyEmail [TablesPrefix]]]]"
+	echo "	$(basename "$0") DbName FromUser ToUser [DbHost [DbUser [DbPassword [NotifyEmail [TablesPrefix]]]]]"
 	echo ''
 	echo 'Required parameters:'
 	echo '	DbName		Wiki database name'
@@ -550,7 +561,9 @@ Help ()
 	echo '	3. Delete same users accounts'
 	echo '	4. Purge cache'
 	echo ''
-	echo 'Note: Does not support external users'
+	echo 'Notes:'
+	echo '  1. Does not support external users'
+	echo '  2. Consider (re-)creating indexes with MySQL for columns related to step 8/9 (see sourcecode), if one of the deletions is too slow'
 }
 
 
